@@ -1,0 +1,598 @@
+/**
+ * SecureLink Checker - Main Stylesheet
+ * Professional cybersecurity theme with Bootstrap enhancements
+ * Built by Dike Micheal
+ */
+
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+
+:root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --dark-color: #1e293b;
+    --darker-color: #0f172a;
+    --light-color: #f8fafc;
+    --text-light: #e2e8f0;
+    --border-radius: 12px;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #1e293b;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+
+.navbar {
+    padding: 1rem 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+    transition: var(--transition);
+}
+
+.navbar-brand:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+
+.hero-section {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4rem 0;
+}
+
+.security-icon {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.url-input-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-top: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.input-group-lg .form-control {
+    padding: 1rem 1.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.95);
+    color: #1e293b;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.input-group-lg .form-control:focus {
+    background: white;
+    border-color: var(--primary-color);
+    color: #1e293b;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.input-group-lg .form-control::placeholder {
+    color: #64748b;
+}
+
+.features-badges .badge {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ============================================
+   HOW IT WORKS SECTION
+   ============================================ */
+
+.how-it-works-section {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8eeff 100%);
+    position: relative;
+}
+
+.how-it-works-section h2 {
+    font-weight: 700;
+    color: #1e293b;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.step-card {
+    padding: 2rem;
+    transition: var(--transition);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+}
+
+.step-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+}
+
+.step-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    transition: var(--transition);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.step-icon i {
+    color: white;
+}
+
+.step-card:hover .step-icon {
+    transform: rotate(360deg);
+}
+
+.step-divider {
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(to right, var(--primary-color), var(--success-color));
+    margin: 1rem auto;
+}
+
+/* ============================================
+   WHY CHOOSE SECTION
+   ============================================ */
+
+.why-choose-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.why-choose-section h2 {
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.why-choose-section .text-muted {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.why-choose-section .text-center p {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.feature-icon {
+    background: white;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    transition: var(--transition);
+}
+
+.feature-icon:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   AUTHENTICATION PAGES
+   ============================================ */
+
+.auth-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.auth-container {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    padding: 3rem 0;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.auth-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.auth-icon i {
+    color: white;
+}
+
+.auth-card .form-control {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.auth-card .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.auth-card .btn-primary {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.auth-card .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+}
+
+/* ============================================
+   DASHBOARD
+   ============================================ */
+
+.dashboard-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: calc(100vh - 80px);
+}
+
+.welcome-card {
+    background: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    color: #1e293b;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.scanner-card {
+    background: white;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    color: #1e293b;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.loading-card {
+    background: white;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--border-radius);
+    padding: 3rem;
+    color: #1e293b;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   RISK BADGE
+   ============================================ */
+
+.risk-badge-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--box-shadow);
+}
+
+.risk-badge {
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.risk-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+}
+
+.risk-badge.risk-safe {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 2px solid var(--success-color);
+}
+
+.risk-badge.risk-safe .risk-icon {
+    background: var(--success-color);
+    color: white;
+}
+
+.risk-badge.risk-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border: 2px solid var(--warning-color);
+}
+
+.risk-badge.risk-warning .risk-icon {
+    background: var(--warning-color);
+    color: white;
+}
+
+.risk-badge.risk-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border: 2px solid var(--danger-color);
+}
+
+.risk-badge.risk-danger .risk-icon {
+    background: var(--danger-color);
+    color: white;
+}
+
+.risk-text {
+    font-weight: 700;
+    font-size: 2rem;
+    margin: 0;
+}
+
+.risk-score {
+    color: #666;
+    margin: 0;
+}
+
+/* ============================================
+   SECURITY CHECKS
+   ============================================ */
+
+.check-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    height: 100%;
+}
+
+.check-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.check-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.check-header h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.check-status {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.check-message {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.check-card .progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+}
+
+/* ============================================
+   RECOMMENDATIONS
+   ============================================ */
+
+.recommendations-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--box-shadow);
+}
+
+.recommendations-card h5 {
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.recommendations-card ul {
+    list-style: none;
+    padding: 0;
+}
+
+.recommendations-card li {
+    padding: 0.75rem 0;
+    padding-left: 2rem;
+    position: relative;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.recommendations-card li:last-child {
+    border-bottom: none;
+}
+
+.recommendations-card li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
+.footer {
+    margin-top: auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-top: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.footer a {
+    color: #adb5bd;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.footer a:hover {
+    color: var(--primary-color);
+}
+
+.footer ul {
+    padding: 0;
+    list-style: none;
+}
+
+.footer ul li {
+    margin-bottom: 0.5rem;
+}
+
+.disclaimer-box {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 152, 0, 0.15));
+    border: 2px solid rgba(255, 193, 7, 0.5);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
+}
+
+.social-icons a {
+    margin: 0 0.5rem;
+    transition: var(--transition);
+}
+
+.social-icons a:hover {
+    transform: translateY(-3px);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    transition: var(--transition);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.bg-dark {
+    background-color: var(--dark-color) !important;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 0;
+        min-height: auto;
+    }
+
+    .url-input-card {
+        padding: 1.5rem;
+    }
+
+    .input-group-lg .btn {
+        padding: 0.75rem 1rem;
+    }
+
+    .auth-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .risk-text {
+        font-size: 1.5rem;
+    }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.check-card,
+.risk-badge-card,
+.recommendations-card {
+    animation: fadeIn 0.5s ease-in-out;
+}
