@@ -255,97 +255,97 @@ const checkSuspiciousPatterns = async (targetURL, report) => {
         score: Math.max(score, 0),
         icon
     };
-/**
- * Analyze page content (HTML/JS) for suspicious indicators
- */
-const cheerio = require('cheerio');
-const checkContentAnalysis = async (targetURL, parsedURL, report) => {
-    try {
-        const response = await axios.get(targetURL, {
-            timeout: 7000,
-            maxRedirects: 3,
-            validateStatus: () => true
-        });
+    /**
+     * Analyze page content (HTML/JS) for suspicious indicators
+     */
+    const cheerio = require('cheerio');
+    const checkContentAnalysis = async (targetURL, parsedURL, report) => {
+        try {
+            const response = await axios.get(targetURL, {
+                timeout: 7000,
+                maxRedirects: 3,
+                validateStatus: () => true
+            });
 
-        const html = typeof response.data === 'string' ? response.data : '';
-        const $ = cheerio.load(html);
+            const html = typeof response.data === 'string' ? response.data : '';
+            const $ = cheerio.load(html);
 
-        let score = 20; // start with full points, subtract for findings
-        const findings = [];
+            let score = 20; // start with full points, subtract for findings
+            const findings = [];
 
-        // Forms with password inputs
-        const forms = $('form');
-        const hasPasswordInput = $('input[type="password"]').length > 0;
-        if (forms.length > 0 && hasPasswordInput && parsedURL.protocol !== 'https:') {
-            findings.push('Login form served over non-HTTPS');
-            score -= 8;
-        }
-
-        // External scripts from suspicious TLDs
-        const suspiciousTLDs = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top'];
-        $('script[src]').each((_, el) => {
-            const src = $(el).attr('src') || '';
-            if (suspiciousTLDs.some(tld => src.toLowerCase().includes(tld))) {
-                findings.push(`External script from suspicious TLD: ${src}`);
-                score -= 5;
+            // Forms with password inputs
+            const forms = $('form');
+            const hasPasswordInput = $('input[type="password"]').length > 0;
+            if (forms.length > 0 && hasPasswordInput && parsedURL.protocol !== 'https:') {
+                findings.push('Login form served over non-HTTPS');
+                score -= 8;
             }
-        });
 
-        // Obfuscated JS patterns
-        const lower = html.toLowerCase();
-        const hasEval = /eval\s*\(/.test(lower);
-        const hasFunctionCtor = /new\s+function\s*\(/.test(lower) || /function\s*\(.*\)\s*\{/.test(lower);
-        const hasAtob = /atob\s*\(/.test(lower);
-        const longBase64 = /[A-Za-z0-9+/]{200,}=*/.test(html);
-        if (hasEval) { findings.push('Use of eval() detected'); score -= 5; }
-        if (hasAtob) { findings.push('Base64 decoding (atob) detected'); score -= 3; }
-        if (longBase64) { findings.push('Long base64 strings detected'); score -= 4; }
+            // External scripts from suspicious TLDs
+            const suspiciousTLDs = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top'];
+            $('script[src]').each((_, el) => {
+                const src = $(el).attr('src') || '';
+                if (suspiciousTLDs.some(tld => src.toLowerCase().includes(tld))) {
+                    findings.push(`External script from suspicious TLD: ${src}`);
+                    score -= 5;
+                }
+            });
 
-        // Excessive iframes
-        const iframeCount = $('iframe').length;
-        if (iframeCount >= 3) {
-            findings.push(`Multiple iframes detected (${iframeCount})`);
-            score -= 4;
+            // Obfuscated JS patterns
+            const lower = html.toLowerCase();
+            const hasEval = /eval\s*\(/.test(lower);
+            const hasFunctionCtor = /new\s+function\s*\(/.test(lower) || /function\s*\(.*\)\s*\{/.test(lower);
+            const hasAtob = /atob\s*\(/.test(lower);
+            const longBase64 = /[A-Za-z0-9+/]{200,}=*/.test(html);
+            if (hasEval) { findings.push('Use of eval() detected'); score -= 5; }
+            if (hasAtob) { findings.push('Base64 decoding (atob) detected'); score -= 3; }
+            if (longBase64) { findings.push('Long base64 strings detected'); score -= 4; }
+
+            // Excessive iframes
+            const iframeCount = $('iframe').length;
+            if (iframeCount >= 3) {
+                findings.push(`Multiple iframes detected (${iframeCount})`);
+                score -= 4;
+            }
+
+            // Brand impersonation hints
+            const title = $('title').text().trim().toLowerCase();
+            const domain = parsedURL.hostname.toLowerCase();
+            const brands = ['google', 'microsoft', 'apple', 'amazon', 'paypal', 'facebook', 'bank'];
+            const mentionsBrand = brands.some(b => title.includes(b));
+            const domainMatchesBrand = brands.some(b => domain.includes(b));
+            if (mentionsBrand && !domainMatchesBrand) {
+                findings.push('Page title references a popular brand, but domain does not');
+                score -= 4;
+            }
+
+            // Hidden inputs
+            const hiddenInputs = $('input[type="hidden"]').length;
+            if (hiddenInputs >= 10) {
+                findings.push(`Many hidden inputs detected (${hiddenInputs})`);
+                score -= 3;
+            }
+
+            // Finalize
+            score = Math.max(0, Math.min(20, score));
+            report.checks.contentAnalysis = {
+                status: score >= 15 ? 'Clean' : score >= 8 ? 'Caution' : 'Suspicious',
+                message: findings.length ? findings.join('; ') : 'No suspicious content indicators found',
+                findings,
+                score,
+                icon: score >= 15 ? '✓' : score >= 8 ? '⚠' : '✗'
+            };
+            report.riskScore += score;
+        } catch (error) {
+            report.checks.contentAnalysis = {
+                status: 'Unknown',
+                message: 'Unable to fetch page content for analysis',
+                score: 8, // neutral middle to avoid punishing sites blocking fetches
+                icon: '?'
+            };
+            report.riskScore += 8;
         }
-
-        // Brand impersonation hints
-        const title = $('title').text().trim().toLowerCase();
-        const domain = parsedURL.hostname.toLowerCase();
-        const brands = ['google', 'microsoft', 'apple', 'amazon', 'paypal', 'facebook', 'bank'];
-        const mentionsBrand = brands.some(b => title.includes(b));
-        const domainMatchesBrand = brands.some(b => domain.includes(b));
-        if (mentionsBrand && !domainMatchesBrand) {
-            findings.push('Page title references a popular brand, but domain does not');
-            score -= 4;
-        }
-
-        // Hidden inputs
-        const hiddenInputs = $('input[type="hidden"]').length;
-        if (hiddenInputs >= 10) {
-            findings.push(`Many hidden inputs detected (${hiddenInputs})`);
-            score -= 3;
-        }
-
-        // Finalize
-        score = Math.max(0, Math.min(20, score));
-        report.checks.contentAnalysis = {
-            status: score >= 15 ? 'Clean' : score >= 8 ? 'Caution' : 'Suspicious',
-            message: findings.length ? findings.join('; ') : 'No suspicious content indicators found',
-            findings,
-            score,
-            icon: score >= 15 ? '✓' : score >= 8 ? '⚠' : '✗'
-        };
-        report.riskScore += score;
-    } catch (error) {
-        report.checks.contentAnalysis = {
-            status: 'Unknown',
-            message: 'Unable to fetch page content for analysis',
-            score: 8, // neutral middle to avoid punishing sites blocking fetches
-            icon: '?'
-        };
-        report.riskScore += 8;
-    }
-};
+    };
 
     report.riskScore += report.checks.urlPattern.score;
 };
