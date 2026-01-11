@@ -35,14 +35,25 @@ app.use(cors({
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/securelink')
-    .then(() => console.log('✅ MongoDB Connected Successfully'))
-    .catch(err => {
-        console.error('❌ MongoDB Connection Error:', err.message);
-        console.log('⚠️  Make sure MongoDB is running on your system');
-        console.log('   Run: mongod');
-    });
+// Decide whether to use MongoDB or in-memory fallback
+const shouldUseMongo = () => {
+    if (process.env.USE_IN_MEMORY === 'true') return false;
+    const uri = process.env.MONGODB_URI;
+    if (!uri) return false;
+    if (uri.includes('<db_password>')) return false; // placeholder not filled
+    return true;
+};
+
+if (shouldUseMongo()) {
+    mongoose.connect(process.env.MONGODB_URI)
+        .then(() => console.log('✅ MongoDB Connected Successfully'))
+        .catch(err => {
+            console.error('❌ MongoDB Connection Error:', err.message);
+            console.log('⚠️  Using in-memory store instead. Set USE_IN_MEMORY=true to skip MongoDB.');
+        });
+} else {
+    console.log('ℹ️ Skipping MongoDB connection. Using in-memory store for auth.');
+}
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/scan', scanRoutes);
