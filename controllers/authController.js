@@ -4,7 +4,7 @@
  */
 
 const memoryStore = require('../utils/memoryStore');
-const { sendTokenResponse } = require('../utils/jwtUtils');
+const { sendTokenResponse, generateToken } = require('../utils/jwtUtils');
 const { validateSignup, validateLogin, sanitizeInput } = require('../utils/validation');
 
 /**
@@ -39,6 +39,19 @@ const signup = async (req, res) => {
                 email: email.toLowerCase(),
                 password
             });
+            // Decide response: form submission -> set cookie and redirect; JSON -> send JSON
+            const isForm = req.is('application/x-www-form-urlencoded') || (req.headers.accept && req.headers.accept.includes('text/html'));
+            if (isForm) {
+                const token = generateToken(user);
+                const cookieOptions = {
+                    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'strict'
+                };
+                res.cookie('token', token, cookieOptions);
+                return res.redirect('/dashboard');
+            }
             return sendTokenResponse(user, 201, res);
         } catch (err) {
             if (err && err.message === 'duplicate_email') {
@@ -100,6 +113,19 @@ const login = async (req, res) => {
         }
         await memoryStore.updateLastLogin(mUser.email);
         const user = { id: mUser.id, fullName: mUser.fullName, email: mUser.email, createdAt: mUser.createdAt };
+        // Decide response: form submission -> set cookie and redirect; JSON -> send JSON
+        const isForm = req.is('application/x-www-form-urlencoded') || (req.headers.accept && req.headers.accept.includes('text/html'));
+        if (isForm) {
+            const token = generateToken(user);
+            const cookieOptions = {
+                expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+            };
+            res.cookie('token', token, cookieOptions);
+            return res.redirect('/dashboard');
+        }
         return sendTokenResponse(user, 200, res);
 
     } catch (error) {

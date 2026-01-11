@@ -28,20 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
  * Redirect to login if not authenticated
  */
 async function checkAuthentication() {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-        window.location.href = '/login';
-        return;
-    }
-
     try {
         const response = await fetch(`${API_URL}/api/auth/me`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            method: 'GET'
         });
 
         if (response.ok) {
@@ -51,13 +40,11 @@ async function checkAuthentication() {
                 document.getElementById('userName').textContent = data.user.fullName;
             }
         } else {
-            // Token invalid or expired
-            localStorage.removeItem('token');
+            // Not authenticated
             window.location.href = '/login';
         }
     } catch (error) {
         console.error('Authentication check error:', error);
-        localStorage.removeItem('token');
         window.location.href = '/login';
     }
 }
@@ -77,12 +64,6 @@ async function handleScan(e) {
     }
 
     // Get token
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = '/login';
-        return;
-    }
-
     // Show loading state
     showLoading();
     hideResults();
@@ -94,7 +75,6 @@ async function handleScan(e) {
         const response = await fetch(`${API_URL}/api/scan/check`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ url })
@@ -258,22 +238,14 @@ function hideResults() {
  * Handle logout
  */
 async function handleLogout() {
-    const token = localStorage.getItem('token');
-
     try {
         await fetch(`${API_URL}/api/auth/logout`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            method: 'POST'
         });
     } catch (error) {
         console.error('Logout error:', error);
     }
 
-    // Clear token and redirect
-    localStorage.removeItem('token');
     window.location.href = '/login';
 }
 
