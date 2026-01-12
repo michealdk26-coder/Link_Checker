@@ -121,6 +121,11 @@ function displayResults(report) {
     updateCheck('domainReputationCheck', report.checks.domainReputation);
     updateCheck('urlPatternCheck', report.checks.urlPattern);
 
+    // Update AI analysis (if available)
+    if (report.checks.aiAnalysis) {
+        updateAIAnalysis('aiAnalysisCheck', report.checks.aiAnalysis);
+    }
+
     // Update recommendations
     updateRecommendations(report.recommendations);
 
@@ -196,6 +201,101 @@ function updateCheck(checkId, checkData) {
         progressBar.classList.add('bg-warning');
     } else {
         progressBar.classList.add('bg-danger');
+    }
+}
+
+/**
+ * Update AI analysis card with detailed information
+ */
+function updateAIAnalysis(checkId, aiData) {
+    const checkCard = document.getElementById(checkId);
+    if (!checkCard || !aiData) return;
+
+    const statusSpan = checkCard.querySelector('.check-status');
+    const messageP = checkCard.querySelector('.check-message');
+    const progressBar = checkCard.querySelector('.progress-bar');
+    const detailsDiv = document.getElementById('aiAnalysisDetails');
+
+    // Update status
+    statusSpan.textContent = `${aiData.icon} ${aiData.status}`;
+
+    // Update status color
+    statusSpan.classList.remove('text-success', 'text-warning', 'text-danger', 'text-muted');
+    if (aiData.status === 'Trusted' || aiData.trustLevel === 'safe') {
+        statusSpan.classList.add('text-success');
+    } else if (aiData.status === 'Caution' || aiData.trustLevel === 'caution') {
+        statusSpan.classList.add('text-warning');
+    } else if (aiData.status === 'Suspicious' || aiData.trustLevel === 'dangerous') {
+        statusSpan.classList.add('text-danger');
+    } else {
+        statusSpan.classList.add('text-muted');
+    }
+
+    // Update message
+    messageP.textContent = aiData.message;
+
+    // Update progress bar
+    const percentage = (aiData.score / 20) * 100;
+    progressBar.style.width = `${percentage}%`;
+
+    // Update progress bar color
+    progressBar.classList.remove('bg-success', 'bg-warning', 'bg-danger', 'bg-info');
+    if (percentage >= 75) {
+        progressBar.classList.add('bg-success');
+    } else if (percentage >= 50) {
+        progressBar.classList.add('bg-warning');
+    } else if (percentage > 0) {
+        progressBar.classList.add('bg-danger');
+    } else {
+        progressBar.classList.add('bg-info');
+    }
+
+    // Show detailed AI analysis if available
+    if (aiData.aiPowered && aiData.credibilityScore !== null) {
+        detailsDiv.style.display = 'block';
+
+        // Update credibility score in message
+        messageP.innerHTML = `${aiData.message}<br><strong>AI Credibility Score: ${aiData.credibilityScore}/100</strong>`;
+
+        // Update risk factors
+        const riskFactorsList = document.getElementById('aiRiskFactors');
+        riskFactorsList.innerHTML = '';
+        if (aiData.riskFactors && aiData.riskFactors.length > 0) {
+            aiData.riskFactors.forEach(factor => {
+                const li = document.createElement('li');
+                li.textContent = factor;
+                li.className = 'text-danger';
+                riskFactorsList.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'No significant risk factors identified';
+            li.className = 'text-muted';
+            riskFactorsList.appendChild(li);
+        }
+
+        // Update legitimacy indicators
+        const legitimacyList = document.getElementById('aiLegitimacyIndicators');
+        legitimacyList.innerHTML = '';
+        if (aiData.legitimacyIndicators && aiData.legitimacyIndicators.length > 0) {
+            aiData.legitimacyIndicators.forEach(indicator => {
+                const li = document.createElement('li');
+                li.textContent = indicator;
+                li.className = 'text-success';
+                legitimacyList.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'No strong legitimacy indicators found';
+            li.className = 'text-muted';
+            legitimacyList.appendChild(li);
+        }
+
+        // Update AI recommendation
+        const recommendationSpan = document.getElementById('aiRecommendation');
+        recommendationSpan.textContent = aiData.recommendation || 'Exercise caution when visiting this website.';
+    } else {
+        detailsDiv.style.display = 'none';
     }
 }
 

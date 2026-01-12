@@ -21,6 +21,12 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const cheerio = require('cheerio');
+const OpenAI = require('openai');
+
+// Initialize OpenAI client
+const openai = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_api_key_here'
+    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    : null;
 
 /**
  * @route   POST /api/scan/check
@@ -61,7 +67,8 @@ const scanURL = async (req, res) => {
             checkSecurityHeaders(targetURL, securityReport),
             checkDomainReputation(parsedURL, securityReport),
             checkSuspiciousPatterns(targetURL, securityReport),
-            checkContentAnalysis(targetURL, parsedURL, securityReport)
+            checkContentAnalysis(targetURL, parsedURL, securityReport),
+            checkAICredibilityAnalysis(targetURL, parsedURL, securityReport) // AI-powered analysis
         ]);
 
         // Calculate overall risk
@@ -350,12 +357,180 @@ const checkContentAnalysis = async (targetURL, parsedURL, report) => {
 };
 
 /**
+ * AI-Powered Credibility Analysis using OpenAI
+ * Uses AI to analyze URL and domain credibility with contextual understanding
+ */
+const checkAICredibilityAnalysis = async (targetURL, parsedURL, report) => {
+    if (!openai) {
+        report.checks.aiAnalysis = {
+            status: 'Disabled',
+            message: 'AI analysis is not configured. Add OPENAI_API_KEY to .env file to enable AI-powered credibility checking.',
+            score: 0,
+            icon: '⚙',
+            credibilityScore: null,
+            analysis: null
+        };
+        return;
+    }
+
+    try {
+        const domain = parsedURL.hostname;
+        const protocol = parsedURL.protocol;
+        const path = parsedURL.pathname;
+
+        // Prepare context for AI
+        const prompt = `You are a cybersecurity expert specializing in URL and website credibility analysis. Analyze the following URL for potential security risks, phishing attempts, and overall credibility.
+
+URL: ${targetURL}
+Domain: ${domain}
+Protocol: ${protocol}
+Path: ${path}
+
+Provide a detailed analysis including:
+1. Credibility assessment (0-100 score where 100 is most credible)
+2. Potential security risks or red flags
+3. Indicators of legitimacy or suspicion
+4. Likelihood of phishing, malware, or scam (low/medium/high)
+5. Recommendations for users
+
+Respond in JSON format:
+{
+  "credibilityScore": <number 0-100>,
+  "trustLevel": "<safe/caution/dangerous>",
+  "riskFactors": ["<risk1>", "<risk2>", ...],
+  "legitimacyIndicators": ["<indicator1>", "<indicator2>", ...],
+  "phishingLikelihood": "<low/medium/high>",
+  "malwareLikelihood": "<low/medium/high>",
+  "summary": "<brief summary>",
+  "recommendation": "<user recommendation>"
+}`;
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini", // Using the faster, cost-effective model
+            messages: [
+                {
+                    role: "system",
+                    content: "You are an expert cybersecurity analyst specializing in URL security and phishing detection. Provide accurate, detailed analysis in JSON format only."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: 0.3, // Lower temperature for more consistent analysis
+            max_tokens: 1000,
+            response_format: { type: "json_object" }
+        });
+
+        const aiResponse = completion.choices[0].message.content;
+        const analysis = JSON.parse(aiResponse);
+
+        // Convert AI credibility score (0-100) to our scoring system (0-20)
+        const aiScore = Math.round((analysis.credibilityScore / 100) * 20);
+
+        // Determine status based on AI assessment
+        let status = 'Unknown';
+        let icon = '?';
+        if (analysis.trustLevel === 'safe' || analysis.credibilityScore >= 75) {
+            status = 'Trusted';
+            icon = '✓';
+        } else if (analysis.trustLevel === 'caution' || analysis.credibilityScore >= 50) {
+            status = 'Caution';
+            icon = '⚠';
+        } else {
+            status = 'Suspicious';
+            icon = '✗';
+        }
+
+        report.checks.aiAnalysis = {
+            status,
+            message: analysis.summary || 'AI analysis completed',
+            score: aiScore,
+            icon,
+            credibilityScore: analysis.credibilityScore,
+            trustLevel: analysis.trustLevel,
+            riskFactors: analysis.riskFactors || [],
+            legitimacyIndicators: analysis.legitimacyIndicators || [],
+            phishingLikelihood: analysis.phishingLikelihood || 'unknown',
+            malwareLikelihood: analysis.malwareLikelihood || 'unknown',
+            recommendation: analysis.recommendation || '',
+            aiPowered: true
+        };
+
+        report.riskScore += aiScore;
+
+    } catch (error) {
+        console.error('AI Analysis Error:', error);
+        report.checks.aiAnalysis = {
+            status: 'Error',
+            message: 'AI analysis failed. Using traditional security checks.',
+            score: 10, // neutral score
+            icon: '?',
+            error: error.message
+        };
+        report.riskScore += 10;
+    }
+};
+
+/**
  * Calculate overall risk level
+ * AI CREDIBILITY IS NOW THE PRIMARY METRIC
+ * If AI not available, improved traditional scoring is used
  */
 const calculateOverallRisk = (report) => {
-    const maxScore = 100;
-    const percentage = (report.riskScore / maxScore) * 100;
+    let percentage = 50; // Default to medium if no AI data
 
+    // If AI analysis is available, use it as the PRIMARY metric (70% weight)
+    if (report.checks.aiAnalysis && report.checks.aiAnalysis.credibilityScore !== null && report.checks.aiAnalysis.credibilityScore >= 0) {
+        const aiScore = report.checks.aiAnalysis.credibilityScore; // 0-100
+
+        // AI credibility is 70% of the final score
+        percentage = aiScore * 0.7;
+
+        // Traditional checks provide 30% weight as supporting factors
+        // Calculate traditional checks score (out of 100)
+        const traditionalScores = [
+            report.checks.https?.score || 0,
+            report.checks.securityHeaders?.score || 0,
+            report.checks.domainReputation?.score || 0,
+            report.checks.urlPattern?.score || 0,
+            report.checks.contentAnalysis?.score || 0
+        ];
+
+        const traditionalTotal = traditionalScores.reduce((a, b) => a + b, 0); // 0-100
+        const traditionalPercentage = (traditionalTotal / 100) * 100;
+
+        // Boost score if traditional checks also agree it's safe
+        const traditionalBoost = traditionalPercentage * 0.3;
+        percentage = Math.min(100, percentage + traditionalBoost);
+
+    } else {
+        // Fallback: Improved traditional checks when AI is not available
+        // Direct calculation based on individual check scores
+        const scores = [
+            report.checks.https?.score || 0,          // 0-20
+            report.checks.securityHeaders?.score || 0, // 0-20
+            report.checks.domainReputation?.score || 0, // 0-20
+            report.checks.urlPattern?.score || 0,      // 0-20
+            report.checks.contentAnalysis?.score || 0   // 0-20
+        ];
+
+        const totalScore = scores.reduce((a, b) => a + b, 0); // 0-100
+
+        // Convert to percentage (0-100)
+        percentage = (totalScore / 100) * 100;
+
+        // BOOST for trusted domains: If domain reputation is 20/20 (trusted),
+        // increase the final percentage by 10 points
+        if (report.checks.domainReputation && report.checks.domainReputation.score === 20) {
+            percentage = Math.min(100, percentage + 10);
+        }
+    }
+
+    // Ensure percentage is between 0-100
+    percentage = Math.max(0, Math.min(100, Math.round(percentage)));
+
+    // Determine risk level based on percentage
     if (percentage >= 75) {
         report.overallRisk = 'Safe';
         report.riskLevel = 'low';
@@ -370,35 +545,92 @@ const calculateOverallRisk = (report) => {
         report.riskColor = 'danger';
     }
 
-    report.riskPercentage = Math.round(percentage);
+    report.riskPercentage = percentage;
 };
 
 /**
- * Generate security recommendations
+ * Generate security recommendations based on actual findings
  */
 const generateRecommendations = (report) => {
     const recommendations = [];
 
-    if (!report.checks.https || report.checks.https.score === 0) {
-        recommendations.push('Avoid entering sensitive information - website is not encrypted');
+    // HTTPS check
+    if (report.checks.https) {
+        if (report.checks.https.score === 20) {
+            recommendations.push('HTTPS Encryption: Website uses secure HTTPS encryption');
+        } else if (report.checks.https.score === 0) {
+            recommendations.push('NO HTTPS: Avoid entering sensitive information - website is not encrypted');
+        }
     }
 
-    if (report.checks.securityHeaders && report.checks.securityHeaders.score < 15) {
-        recommendations.push('Website lacks important security headers');
+    // Security Headers
+    if (report.checks.securityHeaders) {
+        if (report.checks.securityHeaders.score >= 15) {
+            recommendations.push(`Security Headers: ${report.checks.securityHeaders.foundHeaders.length} important security headers detected`);
+        } else if (report.checks.securityHeaders.score > 0) {
+            const missing = report.checks.securityHeaders.missingHeaders || [];
+            recommendations.push(`Security Headers: Missing ${missing.length} security headers (${missing.slice(0, 2).join(', ')})`);
+        } else {
+            recommendations.push('Security Headers: Website lacks important security headers');
+        }
     }
 
-    if (report.checks.urlPattern && report.checks.urlPattern.warnings.length > 0) {
-        recommendations.push('URL contains suspicious patterns - verify authenticity');
+    // Domain Reputation
+    if (report.checks.domainReputation) {
+        if (report.checks.domainReputation.score === 20) {
+            recommendations.push('Domain Reputation: This is a well-known and trusted domain');
+        } else if (report.checks.domainReputation.status === 'Suspicious') {
+            recommendations.push('Domain Reputation: Domain uses a TLD commonly associated with malicious sites');
+        } else {
+            recommendations.push('Domain Reputation: Domain reputation is unknown');
+        }
     }
 
+    // URL Pattern Analysis
+    if (report.checks.urlPattern) {
+        if (report.checks.urlPattern.warnings && report.checks.urlPattern.warnings.length > 0) {
+            recommendations.push(`URL Pattern: ${report.checks.urlPattern.warnings[0]}`);
+        } else if (report.checks.urlPattern.score === 20) {
+            recommendations.push('URL Pattern: No suspicious patterns detected in URL');
+        }
+    }
+
+    // Content Analysis
+    if (report.checks.contentAnalysis) {
+        if (report.checks.contentAnalysis.findings && report.checks.contentAnalysis.findings.length > 0) {
+            recommendations.push(`Content: ${report.checks.contentAnalysis.findings[0]}`);
+        } else if (report.checks.contentAnalysis.score >= 15) {
+            recommendations.push('Content Analysis: Page content appears clean with no suspicious indicators');
+        }
+    }
+
+    // AI Analysis if available
+    if (report.checks.aiAnalysis && report.checks.aiAnalysis.credibilityScore !== null) {
+        if (report.checks.aiAnalysis.credibilityScore >= 75) {
+            recommendations.push(`AI Assessment: High credibility score (${report.checks.aiAnalysis.credibilityScore}/100) - Website appears legitimate`);
+        } else if (report.checks.aiAnalysis.credibilityScore >= 50) {
+            recommendations.push(`AI Assessment: Medium credibility (${report.checks.aiAnalysis.credibilityScore}/100) - Exercise caution`);
+        } else {
+            recommendations.push(`AI Assessment: Low credibility score (${report.checks.aiAnalysis.credibilityScore}/100) - ${report.checks.aiAnalysis.recommendation}`);
+        }
+    }
+
+    // Overall risk guidance
     if (report.overallRisk === 'Dangerous') {
-        recommendations.push('⚠ HIGH RISK: Do not proceed unless you trust this source');
+        recommendations.push('HIGH RISK: Do not proceed unless you trust this source');
         recommendations.push('Verify the URL carefully for typos or spoofing');
+    } else if (report.overallRisk === 'Caution') {
+        recommendations.push('Exercise caution when entering sensitive information');
+        recommendations.push('Verify the URL matches the intended destination');
+    } else if (report.overallRisk === 'Safe') {
+        recommendations.push('This website appears to be legitimate and secure');
+        recommendations.push('Safe to browse and enter information');
     }
 
+    // Ensure at least some recommendations
     if (recommendations.length === 0) {
-        recommendations.push('Website appears safe, but always exercise caution');
-        recommendations.push('Verify the URL matches the intended destination');
+        recommendations.push('Website assessment complete');
+        recommendations.push('Always verify the URL matches the intended destination');
     }
 
     report.recommendations = recommendations;
